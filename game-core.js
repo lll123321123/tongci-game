@@ -1,6 +1,6 @@
 /*
  * 同词相遇 · 纯逻辑工具
- * 这个文件不依赖 DOM / CloudBase，可以直接在 Node 里做单元测试。
+ * 这个文件不依赖 DOM / Supabase，可以直接在 Node 里做单元测试。
  */
 (function (root, factory) {
   const api = factory();

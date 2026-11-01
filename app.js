@@ -3,7 +3,7 @@
  *  同词相遇 · 前端主逻辑
  * ============================================================
  *
- *  实时同步：腾讯云 CloudBase Realtime Broadcast
+ *  实时同步：Supabase Realtime Broadcast
  *  频道：room:<房间号>
  *  事件：game
  *
@@ -16,7 +16,7 @@
  *  断线/重连：
  *  - 每 3 秒广播一次 heartbeat；12 秒未收到对方消息视为离线（只提示，不销毁房间）。
  *  - 刷新页面会用 sessionStorage 自动恢复；房主以快照同步，必要时重开当前轮。
- *  - 使用 CloudBase app.realtime()，不依赖数据库，不依赖自建服务器。
+ *  - 使用 Supabase Realtime，不依赖数据库，不依赖自建服务器。
  */
 (function () {
   "use strict";
@@ -34,24 +34,16 @@
   const DEBUG = query.get("debug") === "1";
 
   const CONFIG = (function readConfig() {
-    const envId = String(RAW_CONFIG.CLOUDBASE_ENV_ID || "").trim();
-    const key = String(
-      RAW_CONFIG.CLOUDBASE_PUBLISHABLE_KEY ||
-        RAW_CONFIG.CLOUDBASE_ACCESS_KEY ||
-        ""
-    ).trim();
-    const region = String(RAW_CONFIG.CLOUDBASE_REGION || "").trim();
+    const rawUrl = String(RAW_CONFIG.SUPABASE_URL || "").trim();
+    const url = rawUrl.replace(/\/+$/, "");
+    const key = String(RAW_CONFIG.SUPABASE_ANON_KEY || "").trim();
     const placeholder = /YOUR|PASTE|EXAMPLE|CHANGEME|XXXX/i;
-    const validEnv =
-      envId.length >= 3 &&
-      /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(envId) &&
-      !placeholder.test(envId);
-    const validKey = key.length > 8 && !placeholder.test(key);
+    const validUrl = /^https?:\/\/[^\s/]+/i.test(url) && !placeholder.test(url);
+    const validKey = key.length > 20 && !placeholder.test(key);
     return {
-      envId,
+      url,
       key,
-      region,
-      ok: validEnv && validKey,
+      ok: validUrl && validKey,
     };
   })();
 
@@ -200,7 +192,7 @@
 
   function canUseTransport() {
     if (DEMO) return typeof window.BroadcastChannel === "function";
-    return CONFIG.ok && !!window.cloudbase;
+    return CONFIG.ok && !!window.supabase;
   }
 
   function demoParams() {
@@ -346,9 +338,9 @@
     dom.demoBanner.hidden = !demoVisible;
 
     if (setupVisible) {
-      const text = !window.cloudbase && CONFIG.ok
-        ? "CloudBase SDK 加载失败，请检查网络后刷新。"
-        : "还没连接 CloudBase。请先在 config.js 填入环境 ID 与 Publishable Key。";
+      const text = !window.supabase && CONFIG.ok
+        ? "Supabase SDK 加载失败，请检查网络后刷新。"
+        : "还没连接 Supabase。请先在 config.js 填入 Project URL 与 publishable / anon key。";
       const span = dom.setupBanner.querySelector("span");
       if (span) span.textContent = text;
     }
@@ -386,14 +378,14 @@
     }
     if (!DEMO && !CONFIG.ok) {
       setHomeError(
-        "还没有配置 CloudBase。请打开 config.js 填入环境 ID 和 Publishable Key；也可以先点顶部「本地演示」。"
+        "还没有配置 Supabase。请打开 config.js 填入 Project URL 和 publishable / anon key；也可以先点顶部「本地演示」。"
       );
-      showToast("请先完成 CloudBase 配置");
+      showToast("请先完成 Supabase 配置");
       return false;
     }
-    if (!DEMO && !window.cloudbase) {
-      setHomeError("CloudBase SDK 没有加载成功，请检查网络或 CDN 地址后刷新。");
-      showToast("CloudBase SDK 未加载");
+    if (!DEMO && !window.supabase) {
+      setHomeError("Supabase SDK 没有加载成功，请检查网络或 CDN 地址后刷新。");
+      showToast("Supabase SDK 未加载");
       return false;
     }
     return true;
@@ -507,7 +499,7 @@
     if (state.transportState === "connecting" || state.transportState === "idle") {
       status = "正在连接房间…";
     } else if (state.transportState === "error" || state.transportState === "closed") {
-      status = "实时通道连接失败，请检查 CloudBase Realtime 是否已开通";
+      status = "实时通道连接失败，请检查 Supabase 配置与网络";
     } else if (isHost) {
       status = state.peerJoined ? "对方已加入，正在同步…" : "正在等你的一位朋友…";
     } else {
@@ -641,7 +633,7 @@
     ) {
       text = "正在连接房间…";
     } else if (state.transportState === "error" || state.transportState === "closed") {
-      text = "实时通道连接失败，请检查 CloudBase Realtime 是否已开通，或刷新重试。";
+      text = "实时通道连接失败，请检查 Supabase 配置与网络，或刷新重试。";
       offline = true;
     } else if (state.peerLeft) {
       text = "对方已经离开了房间。";
@@ -809,7 +801,7 @@
             onMessage: handleIncoming,
             onStatus: handleTransportStatus,
           })
-        : new CloudBaseTransport({
+        : new SupabaseTransport({
             room: state.room,
             onMessage: handleIncoming,
             onStatus: handleTransportStatus,
@@ -848,7 +840,7 @@
         startHeartbeat();
       }
 
-      // 每次重新订阅成功都重新打招呼；CloudBase 断线重连后尤其重要。
+      // 每次重新订阅成功都重新打招呼；Supabase 断线重连后尤其重要。
       sendHello();
 
       if (state.role === "host") {
@@ -884,7 +876,7 @@
       }
       renderCurrentScreen();
       if (state.screen !== "home") {
-        showToast("实时通道连接失败，请检查 CloudBase Realtime 是否已开通", 4200);
+        showToast("实时通道连接失败，请检查 Supabase 配置与网络", 4200);
       }
       if (DEBUG && detail) {
         state.wireLog.push({ dir: "status", type: status, detail: String(detail), ts: Date.now() });
@@ -2746,30 +2738,30 @@
     }
   }
 
-  class CloudBaseTransport {
+  class SupabaseTransport {
     constructor(options) {
       this.room = options.room;
       this.onMessage = options.onMessage;
       this.onStatus = options.onStatus;
-      this.app = null;
-      this.realtime = null;
+      this.client = null;
       this.channel = null;
-      this.name = "cloudbase";
+      this.name = "supabase";
       this.closed = false;
 
-      const initOptions = {
-        env: CONFIG.envId,
-        accessKey: CONFIG.key,
-        timeout: 20000,
-      };
-      if (CONFIG.region) initOptions.region = CONFIG.region;
+      this.client = window.supabase.createClient(CONFIG.url, CONFIG.key, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+        },
+        realtime: {
+          params: {
+            eventsPerSecond: 20,
+          },
+        },
+      });
 
-      this.app = window.cloudbase.init(initOptions);
-      this.realtime = this.app.realtime();
-
-      // CloudBase 的 topic 会自动加 realtime: 前缀；
-      // 业务频道名统一为 room:<房间号>。
-      this.channel = this.realtime.channel(`room:${this.room}`, {
+      this.channel = this.client.channel(`room:${this.room}`, {
         config: {
           broadcast: {
             self: false,
@@ -2778,7 +2770,6 @@
         },
       });
 
-      // 回调参数是 { event, payload, ... }，业务数据在 payload 里。
       this.channel.on("broadcast", { event: "game" }, (event) => {
         this.onMessage(event.payload);
       });
@@ -2813,30 +2804,37 @@
     disconnect() {
       this.closed = true;
       const channel = this.channel;
-      const realtime = this.realtime;
+      const client = this.client;
       this.channel = null;
-      this.realtime = null;
-      this.app = null;
+      this.client = null;
 
-      const cleanup = async function () {
+      const closeSocket = function () {
         try {
-          if (channel && channel.unsubscribe) await channel.unsubscribe();
-        } catch (err) {
-          /* ignore */
-        }
-        try {
-          if (realtime && channel) await realtime.removeChannel(channel);
-        } catch (err) {
-          /* ignore */
-        }
-        try {
-          if (realtime && realtime.disconnect) await realtime.disconnect();
+          if (client && client.realtime && client.realtime.disconnect) {
+            client.realtime.disconnect();
+          }
         } catch (err) {
           /* ignore */
         }
       };
 
-      cleanup();
+      try {
+        if (client && channel) {
+          const removed = client.removeChannel(channel);
+          if (removed && typeof removed.finally === "function") {
+            removed.finally(closeSocket);
+          } else {
+            closeSocket();
+          }
+        } else if (channel && channel.unsubscribe) {
+          channel.unsubscribe();
+          closeSocket();
+        } else {
+          closeSocket();
+        }
+      } catch (err) {
+        closeSocket();
+      }
     }
   }
 

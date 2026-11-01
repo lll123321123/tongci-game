@@ -10,7 +10,7 @@
     />
     <title>同词相遇 · 两个人，一个词</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://static.cloudbase.net" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -26,7 +26,7 @@
     </div>
 
     <div id="setup-banner" class="top-note top-note--setup" hidden>
-      <span>还没连接 CloudBase。请先在 <code>config.js</code> 填入环境 ID 与 Publishable Key。</span>
+      <span>还没连接 Supabase。请先在 <code>config.js</code> 填入 Project URL 与 publishable / anon key。</span>
       <a id="demo-link" href="?demo=1">先用本地演示 →</a>
     </div>
 
@@ -446,7 +446,7 @@
     <script src="./config.js"></script>
     <script
       defer
-      src="https://static.cloudbase.net/cloudbase-js-sdk/3.10.4/cloudbase.full.js"
+      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"
     ></script>
     <script defer src="./game-core.js"></script>
     <script defer src="./app.js"></script>
