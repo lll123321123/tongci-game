@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5efe3" />
+    <meta
+      name="description"
+      content="同词相遇：两个人各写一个词，看看会不会在同一轮相遇。无需下载，打开网页就能玩。"
+    />
+    <title>同词相遇 · 两个人，一个词</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://static.cloudbase.net" crossorigin />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="atmosphere" aria-hidden="true">
+      <span class="atmosphere__blob atmosphere__blob--one"></span>
+      <span class="atmosphere__blob atmosphere__blob--two"></span>
+      <span class="atmosphere__grain"></span>
+    </div>
+
+    <div id="demo-banner" class="top-note top-note--demo" hidden>
+      <span class="top-note__dot"></span>
+      本地演示模式 · 仅限同一浏览器的两个窗口对局
+    </div>
+
+    <div id="setup-banner" class="top-note top-note--setup" hidden>
+      <span>还没连接 CloudBase。请先在 <code>config.js</code> 填入环境 ID 与 Publishable Key。</span>
+      <a id="demo-link" href="?demo=1">先用本地演示 →</a>
+    </div>
+
+    <main class="app">
+      <!-- ============ 首页 ============ -->
+      <section id="screen-home" class="screen screen--home" data-screen="home">
+        <header class="site-head">
+          <a class="brand" href="./" aria-label="同词相遇首页">
+            <span class="brand__mark" aria-hidden="true"><i></i><i></i></span>
+            <span class="brand__name">同词相遇</span>
+          </a>
+          <button class="text-button" type="button" data-open-rules>怎么玩</button>
+        </header>
+
+        <div class="home-grid">
+          <div class="hero">
+            <p class="eyebrow"><span class="eyebrow__line"></span>TWO MINDS, ONE WORD</p>
+            <h1 class="hero__title">同词<span>相遇</span></h1>
+            <p class="hero__lede">
+              两个人，各写一个词。<br />
+              看看会不会在同一刻，<em>相遇</em>。
+            </p>
+
+            <div class="meet-visual" aria-hidden="true">
+              <span class="meet-visual__thread"></span>
+              <div class="word-ticket word-ticket--a">
+                <span>我想到</span>
+                <strong>月亮</strong>
+              </div>
+              <div class="word-ticket word-ticket--b">
+                <span>TA 想到</span>
+                <strong>海</strong>
+              </div>
+              <div class="meet-visual__core">
+                <span class="meet-visual__halo"></span>
+                <span class="meet-visual__q">?</span>
+                <small>会相遇吗</small>
+              </div>
+              <div class="word-ticket word-ticket--c">
+                <span>下一轮，一起联想</span>
+                <strong>潮汐</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="home-card">
+            <div class="home-card__top">
+              <p class="card-kicker">START A ROOM</p>
+              <h2>开一局默契实验</h2>
+              <p>不用注册。开房后把房间号发给对方，两个设备就能联机。</p>
+            </div>
+
+            <button id="create-btn" class="button button--primary button--wide" type="button">
+              <span>创建房间</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </button>
+
+            <div class="or-rule"><span>或者，加入对方的房间</span></div>
+
+            <form id="join-form" class="join-form" novalidate>
+              <label class="field-label" for="join-code">房间号</label>
+              <div class="join-form__row">
+                <input
+                  id="join-code"
+                  class="code-input"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  pattern="[0-9]*"
+                  maxlength="6"
+                  placeholder="输入 4–6 位数字"
+                  aria-describedby="join-help"
+                />
+                <button id="join-btn" class="button button--ink" type="submit">加入</button>
+              </div>
+              <p id="join-help" class="field-help">输入房主页面上的数字房间号</p>
+              <p id="home-error" class="form-error" role="alert" hidden></p>
+            </form>
+
+            <div class="home-card__foot">
+              <span class="tiny-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <p>两台设备 · 同一个网址 · 不要求同一 WiFi</p>
+            </div>
+          </div>
+        </div>
+
+        <footer class="site-foot">
+          <span>© 同词相遇</span>
+          <span class="site-foot__quote">「原来你也想到了这个词。」</span>
+        </footer>
+      </section>
+
+      <!-- ============ 等待页 ============ -->
+      <section id="screen-waiting" class="screen screen--waiting" data-screen="waiting" hidden>
+        <header class="site-head">
+          <a class="brand" href="./" aria-label="同词相遇首页" data-leave-room>
+            <span class="brand__mark" aria-hidden="true"><i></i><i></i></span>
+            <span class="brand__name">同词相遇</span>
+          </a>
+          <button class="text-button" type="button" data-leave-room>退出房间</button>
+        </header>
+
+        <div class="waiting-wrap">
+          <div class="waiting-card">
+            <div class="waiting-card__glow" aria-hidden="true"></div>
+            <p id="waiting-kicker" class="card-kicker">ROOM IS OPEN</p>
+            <h1 id="waiting-title">等待对方加入</h1>
+            <p id="waiting-copy" class="waiting-copy">把房间号发给 TA，或者直接发送邀请链接。</p>
+
+            <div class="room-ticket">
+              <span class="room-ticket__label">房间号</span>
+              <strong id="waiting-code" class="room-ticket__code">000 000</strong>
+              <button id="copy-code-btn" class="icon-text-button" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="8" y="8" width="11" height="11" rx="2" />
+                  <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                </svg>
+                复制
+              </button>
+            </div>
+
+            <div class="waiting-status" aria-live="polite">
+              <span class="waiting-status__orb" aria-hidden="true"><i></i></span>
+              <span id="waiting-status-text">正在等你的一位朋友…</span>
+            </div>
+
+            <div id="share-block" class="share-block">
+              <label class="field-label" for="share-url">邀请链接</label>
+              <div class="share-block__row">
+                <input id="share-url" type="text" readonly />
+                <button id="copy-invite-btn" class="button button--soft" type="button">复制邀请</button>
+              </div>
+              <p class="field-help">对方打开链接后会自动填好房间号。</p>
+            </div>
+
+            <button id="waiting-back-btn" class="text-button text-button--muted" type="button" data-leave-room>
+              取消，回到首页
+            </button>
+          </div>
+
+          <div class="waiting-tips" aria-hidden="true">
+            <span>01 各自写词</span>
+            <span>02 同时揭晓</span>
+            <span>03 同词相遇</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 游戏页 ============ -->
+      <section id="screen-game" class="screen screen--game" data-screen="game" hidden>
+        <header class="game-bar">
+          <a class="brand brand--small" href="./" aria-label="同词相遇首页" data-leave-room>
+            <span class="brand__mark" aria-hidden="true"><i></i><i></i></span>
+            <span class="brand__name">同词相遇</span>
+          </a>
+          <div class="game-bar__right">
+            <span class="room-pill">
+              <span>房间</span>
+              <strong id="game-room-code">000000</strong>
+            </span>
+            <button class="icon-button" type="button" data-leave-room aria-label="退出房间">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M16 17l5-5-5-5M21 12H9" />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <div id="connection-banner" class="connection-banner" role="status" hidden>
+          <span class="connection-banner__pulse"></span>
+          <span id="connection-text">正在连接…</span>
+        </div>
+
+        <div class="game-wrap">
+          <div class="game-heading">
+            <div class="round-stamp">
+              <span>ROUND</span>
+              <strong id="round-number">01</strong>
+            </div>
+            <div class="game-heading__copy">
+              <p id="game-kicker" class="eyebrow">FIRST INSTINCT</p>
+              <h1 id="game-title">凭直觉，写下一个词</h1>
+              <p id="game-subtitle">不用想太多，第一个跳进脑海里的词就很好。</p>
+            </div>
+          </div>
+
+          <section id="previous-panel" class="previous-panel" hidden aria-labelledby="previous-title">
+            <div class="previous-panel__head">
+              <p id="previous-title" class="card-kicker">上一轮的两个词</p>
+              <span>找一个能同时连接它们的词</span>
+            </div>
+            <div class="previous-words">
+              <div class="previous-word">
+                <span>你的</span>
+                <strong id="previous-self">—</strong>
+              </div>
+              <span class="previous-plus" aria-hidden="true">+</span>
+              <div class="previous-word">
+                <span>对方的</span>
+                <strong id="previous-peer">—</strong>
+              </div>
+              <span class="previous-arrow" aria-hidden="true">
+                <svg viewBox="0 0 44 20"><path d="M2 10h34M30 3l8 7-8 7" /></svg>
+              </span>
+              <span class="previous-target">?</span>
+            </div>
+          </section>
+
+          <section id="input-panel" class="answer-card" aria-labelledby="answer-label">
+            <div class="answer-card__head">
+              <label id="answer-label" class="field-label" for="word-input">你的词</label>
+              <span id="char-count" class="char-count">0 / 20</span>
+            </div>
+
+            <form id="word-form" class="word-entry" novalidate>
+              <input
+                id="word-input"
+                type="text"
+                maxlength="20"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                enterkeyhint="done"
+                placeholder="写下一个词…"
+                aria-describedby="word-hint"
+              />
+              <button id="submit-word-btn" class="button button--primary button--submit" type="submit">
+                <span>就是这个词</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6" />
+                </svg>
+              </button>
+            </form>
+
+            <p id="word-hint" class="word-hint">提交后不可修改 · 对方提交前看不到你的词</p>
+
+            <div id="sealed-state" class="sealed-state" hidden>
+              <span class="sealed-state__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M4 9.5 12 5l8 4.5v7L12 21l-8-4.5z" /><path d="m4 9.5 8 4.5 8-4.5M12 14v7" /></svg>
+              </span>
+              <div class="sealed-state__copy">
+                <span>你的词已封存</span>
+                <strong id="sealed-word">—</strong>
+              </div>
+              <span class="sealed-state__wait">
+                <i></i><i></i><i></i>
+                等待对方
+              </span>
+            </div>
+          </section>
+
+          <section id="player-status" class="player-status" aria-label="双方提交状态" aria-live="polite">
+            <div class="player-chip">
+              <span class="avatar avatar--me">你</span>
+              <div>
+                <span class="player-chip__name">你</span>
+                <span id="self-status" class="player-chip__state">思考中</span>
+              </div>
+              <span id="self-status-dot" class="status-dot" aria-hidden="true"></span>
+            </div>
+            <div class="player-chip">
+              <span class="avatar avatar--peer">TA</span>
+              <div>
+                <span class="player-chip__name">对方</span>
+                <span id="peer-status" class="player-chip__state">思考中</span>
+              </div>
+              <span id="peer-status-dot" class="status-dot" aria-hidden="true"></span>
+            </div>
+          </section>
+
+          <p id="game-note" class="game-note" aria-live="polite"></p>
+
+          <section id="reveal-panel" class="reveal-panel" aria-live="polite" hidden>
+            <div class="reveal-panel__top">
+              <p id="reveal-eyebrow" class="eyebrow">THE MOMENT OF TRUTH</p>
+              <h2 id="reveal-title">同时揭晓</h2>
+            </div>
+
+            <div class="reveal-words">
+              <article class="reveal-word reveal-word--self">
+                <span>你写的</span>
+                <strong id="reveal-self">—</strong>
+              </article>
+              <span id="reveal-symbol" class="reveal-symbol" aria-hidden="true">×</span>
+              <article class="reveal-word reveal-word--peer">
+                <span>对方写的</span>
+                <strong id="reveal-peer">—</strong>
+              </article>
+            </div>
+
+            <p id="reveal-message" class="reveal-message"></p>
+            <div id="reveal-next" class="reveal-next" hidden>
+              <span class="mini-loader" aria-hidden="true"></span>
+              <span id="reveal-countdown">即将进入下一轮…</span>
+            </div>
+            <button id="show-result-btn" class="button button--ink" type="button" hidden>
+              查看结算
+            </button>
+          </section>
+        </div>
+      </section>
+
+      <!-- ============ 结算页 ============ -->
+      <section id="screen-result" class="screen screen--result" data-screen="result" hidden>
+        <header class="site-head">
+          <a class="brand" href="./" aria-label="同词相遇首页" data-leave-room>
+            <span class="brand__mark" aria-hidden="true"><i></i><i></i></span>
+            <span class="brand__name">同词相遇</span>
+          </a>
+          <span class="result-top-note">MATCHED</span>
+        </header>
+
+        <div class="result-wrap">
+          <div class="result-hero">
+            <p class="eyebrow"><span class="eyebrow__line"></span>YOU MET IN A WORD</p>
+            <div class="result-orbit" aria-hidden="true">
+              <span class="result-orbit__ring"></span>
+              <span class="result-orbit__dot result-orbit__dot--one"></span>
+              <span class="result-orbit__dot result-orbit__dot--two"></span>
+              <strong id="result-word">—</strong>
+            </div>
+            <h1>同词相遇</h1>
+            <p class="result-lede">你们写出了同一个词。</p>
+          </div>
+
+          <div class="result-card">
+            <div class="result-score">
+              <span>总轮数</span>
+              <strong id="result-rounds">01</strong>
+              <span>ROUNDS</span>
+            </div>
+            <div class="result-divider" aria-hidden="true"></div>
+            <div class="result-rating">
+              <p class="card-kicker">默契评价</p>
+              <h2 id="result-rating">心有灵犀</h2>
+              <p id="result-subtitle">不多不少，刚好在第三个词遇见彼此。</p>
+              <span id="result-stamp" class="result-stamp">IN SYNC</span>
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <button id="rematch-btn" class="button button--primary button--wide" type="button">
+              再玩一局
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" /></svg>
+            </button>
+            <div class="result-actions__row">
+              <button id="share-btn" class="button button--soft" type="button">复制战绩</button>
+              <button id="result-home-btn" class="button button--quiet" type="button" data-leave-room>
+                返回首页
+              </button>
+            </div>
+          </div>
+          <p class="result-footnote">下一局，试着更快一点。</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- 玩法说明 -->
+    <dialog id="rules-dialog" class="dialog" aria-labelledby="rules-title">
+      <div class="dialog__head">
+        <div>
+          <p class="card-kicker">HOW TO PLAY</p>
+          <h2 id="rules-title">两个人，一个词</h2>
+        </div>
+        <button class="dialog__close" type="button" data-close-dialog aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <ol class="rules-list">
+        <li>
+          <span>01</span>
+          <div><strong>各自写一个词</strong><p>第一轮凭直觉，同时提交，谁也别偷看。</p></div>
+        </li>
+        <li>
+          <span>02</span>
+          <div><strong>同时揭晓</strong><p>如果两个词完全相同，游戏立即结束，记为「同词相遇」。</p></div>
+        </li>
+        <li>
+          <span>03</span>
+          <div><strong>用两个词再联想</strong><p>若不同，下一轮请各自写一个能同时关联上一轮两个词的新词。</p></div>
+        </li>
+        <li>
+          <span>04</span>
+          <div><strong>看看几轮能相遇</strong><p>轮数越少，默契越高。第一轮就同词，是传说级别的默契。</p></div>
+        </li>
+      </ol>
+      <p class="dialog__note">小提示：词越具体，越容易撞上；太抽象反而会各走各的。</p>
+      <button class="button button--ink button--wide" type="button" data-close-dialog>知道了，去玩</button>
+    </dialog>
+
+    <!-- 对方离开 -->
+    <dialog id="peer-left-dialog" class="dialog dialog--small" aria-labelledby="peer-left-title">
+      <div class="dialog__head">
+        <div>
+          <p class="card-kicker">CONNECTION LOST</p>
+          <h2 id="peer-left-title">对方离开了房间</h2>
+        </div>
+      </div>
+      <p class="dialog__paragraph">
+        你可以留在这里等 TA 从同一个房间号回来，也可以先返回首页。已完成的轮次会保留在当前页面里。
+      </p>
+      <div class="dialog__actions">
+        <button id="stay-btn" class="button button--soft" type="button">留在这里等</button>
+        <button class="button button--ink" type="button" data-leave-room>返回首页</button>
+      </div>
+    </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <div id="confetti" class="confetti" aria-hidden="true"></div>
+
+    <noscript>
+      <div class="noscript">「同词相遇」需要 JavaScript 才能运行，请在浏览器中开启后刷新。</div>
+    </noscript>
+
+    <script src="./config.js"></script>
+    <script
+      defer
+      src="https://static.cloudbase.net/cloudbase-js-sdk/3.10.4/cloudbase.full.js"
+    ></script>
+    <script defer src="./game-core.js"></script>
+    <script defer src="./app.js"></script>
+  </body>
+</html>
